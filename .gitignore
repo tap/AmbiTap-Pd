@@ -1,0 +1,6 @@
+build/
+externals/*.pd_darwin
+externals/*.pd_linux
+externals/*.dll
+src/*.o
+.DS_Store

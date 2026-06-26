@@ -1,0 +1,3 @@
+[submodule "submodules/AmbiTap"]
+	path = submodules/AmbiTap
+	url = https://github.com/tap/AmbiTap.git
