@@ -366,11 +366,154 @@ def gen_energyvec():
     write("ambitap.energyvec~", p)
 
 
+# ---------------------------------------------------------------- bed2hoa~
+def gen_bed2hoa():
+    p = Patch()
+    header(p, "ambitap.bed2hoa~ <order> <layout>",
+           "Encode a channel-based surround bed to HOA (each speaker feed at its "
+           "canonical direction).")
+    src = chain_source(p)
+    enc = p.obj(40, 170, "ambitap.encode~ 3")
+    dec = p.obj(40, 230, "ambitap.decode~ 3 quad")
+    b2h = p.obj(40, 290, "ambitap.bed2hoa~ 3 quad")
+    bin = p.obj(40, 360, "ambitap.binaural~ 3")
+    dac = p.obj(40, 420, "dac~")
+    p.connect(src, 0, enc, 0)
+    p.connect(enc, 0, dec, 0)
+    p.connect(dec, 0, b2h, 0)
+    p.connect(b2h, 0, bin, 0)
+    p.connect(bin, 0, dac, 0)
+    p.connect(bin, 1, dac, 1)
+    gn = p.msg(340, 130, "gain 1")
+    p.connect(gn, 0, b2h, 0)
+    p.text(230, 233, "quad speaker feeds (a demo bed)")
+    p.text(230, 293, "bed -> (order+1)^2 HOA channels")
+    p.text(40, 460, "feed real speaker channels in layout order (no LFE); "
+                    "layouts match ambitap.decode~")
+    p.text(340, 100, "message: gain")
+    write("ambitap.bed2hoa~", p)
+
+
+# ---------------------------------------------------------------- distance~
+def gen_distance():
+    p = Patch()
+    header(p, "ambitap.distance~ <order>",
+           "Distance cues on a HOA bus: Doppler delay, 1/r gain, air absorption, NFC.")
+    src = chain_source(p)
+    enc = p.obj(40, 180, "ambitap.encode~ 3")
+    ds = p.obj(40, 250, "ambitap.distance~ 3")
+    bin = p.obj(40, 330, "ambitap.binaural~ 3")
+    dac = p.obj(40, 390, "dac~")
+    p.connect(src, 0, enc, 0)
+    p.connect(enc, 0, ds, 0)
+    p.connect(ds, 0, bin, 0)
+    p.connect(bin, 0, dac, 0)
+    p.connect(bin, 1, dac, 1)
+    dist = live_ctrl(p, 340, 120, "distance", "distance (m)")
+    ref = p.msg(340, 200, "reference_distance 1")
+    att = p.msg(340, 236, "attenuation 1")
+    air = p.msg(340, 272, "air_absorption 0.5")
+    sos = p.msg(340, 308, "speed_of_sound 343")
+    md = p.msg(340, 344, "max_distance 50")
+    dop1 = p.msg(340, 384, "doppler 1")
+    dop0 = p.msg(420, 384, "doppler 0")
+    nfc1 = p.msg(340, 420, "nfc 1")
+    nfc0 = p.msg(420, 420, "nfc 0")
+    for m in (dist, ref, att, air, sos, md, dop1, dop0, nfc1, nfc0):
+        p.connect(m, 0, ds, 0)
+    p.text(200, 253, "HOA in -> HOA out with distance cues")
+    p.text(40, 430, "sweep distance for a moving-source Doppler glide")
+    write("ambitap.distance~", p)
+
+
+# ---------------------------------------------------------------- panbin~
+def gen_panbin():
+    p = Patch()
+    header(p, "ambitap.panbin~",
+           "Direct per-source binaural panner (per-source HRTF, no ambisonic bus).")
+    src = chain_source(p)
+    pb = p.obj(40, 250, "ambitap.panbin~")
+    dac = p.obj(40, 330, "dac~")
+    p.connect(src, 0, pb, 0)
+    p.connect(pb, 0, dac, 0)
+    p.connect(pb, 1, dac, 1)
+    az = live_ctrl(p, 340, 120, "azimuth", "azimuth (deg)")
+    el = p.msg(340, 200, "elevation 0")
+    gn = p.msg(340, 240, "gain 1")
+    for m in (az, el, gn):
+        p.connect(m, 0, pb, 0)
+    p.text(200, 253, "mono in -> left / right (direction crossfades click-free)")
+    p.text(340, 290, "messages: azimuth / elevation / gain")
+    write("ambitap.panbin~", p)
+
+
+# ---------------------------------------------------------------- xtc~
+def gen_xtc():
+    p = Patch()
+    header(p, "ambitap.xtc~",
+           "Transaural crosstalk cancellation: binaural/stereo over two loudspeakers.")
+    src = chain_source(p)
+    enc = p.obj(40, 170, "ambitap.encode~ 3")
+    bin = p.obj(40, 240, "ambitap.binaural~ 3")
+    xtc = p.obj(40, 320, "ambitap.xtc~")
+    dac = p.obj(40, 390, "dac~")
+    p.connect(src, 0, enc, 0)
+    p.connect(enc, 0, bin, 0)
+    p.connect(bin, 0, xtc, 0)
+    p.connect(bin, 1, xtc, 1)
+    p.connect(xtc, 0, dac, 0)
+    p.connect(xtc, 1, dac, 1)
+    span = live_ctrl(p, 340, 120, "span", "speaker span (deg)")
+    dist = p.msg(340, 200, "distance 1")
+    reg = p.msg(340, 240, "regularization 0.5")
+    by1 = p.msg(340, 284, "bypass 1")
+    by0 = p.msg(420, 284, "bypass 0")
+    for m in (span, dist, reg, by1, by0):
+        p.connect(m, 0, xtc, 0)
+    p.text(200, 323, "left / right LOUDSPEAKER feeds (not headphones)")
+    p.text(340, 300, "bypass = A/B reference (loudness-match upstream)")
+    p.text(40, 430, "512-sample filter latency; ~-12 dB makeup on the cancelled path")
+    write("ambitap.xtc~", p)
+
+
+# ---------------------------------------------------------------- room~
+def gen_room():
+    p = Patch()
+    header(p, "ambitap.room~ <order>",
+           "Shoebox room on a HOA bus: image-source early reflections + FDN tail.")
+    src = chain_source(p)
+    rm = p.obj(40, 250, "ambitap.room~ 3")
+    bin = p.obj(40, 330, "ambitap.binaural~ 3")
+    dac = p.obj(40, 390, "dac~")
+    p.connect(src, 0, rm, 0)
+    p.connect(rm, 0, bin, 0)
+    p.connect(bin, 0, dac, 0)
+    p.connect(bin, 1, dac, 1)
+    rt = live_ctrl(p, 340, 120, "rt60", "RT60 (s)")
+    dx = p.msg(340, 200, "dim_x 7")
+    dy = p.msg(340, 236, "dim_y 5")
+    dz = p.msg(340, 272, "dim_z 3")
+    dir1 = p.msg(340, 312, "direct 1")
+    dir0 = p.msg(420, 312, "direct 0")
+    er1 = p.msg(340, 348, "er 1")
+    er0 = p.msg(420, 348, "er 0")
+    tl1 = p.msg(340, 384, "tail 1")
+    tl0 = p.msg(420, 384, "tail 0")
+    for m in (rt, dx, dy, dz, dir1, dir0, er1, er0, tl1, tl0):
+        p.connect(m, 0, rm, 0)
+    p.text(200, 253, "mono in -> (order+1)^2 HOA channels (wet room)")
+    p.text(40, 430, "also: source_x/y/z, listener_x/y/z, gain, "
+                    "rt60band <hz> <s>, reflections <x0 x1 y0 y1 z0 z1>")
+    p.text(40, 450, "note: ~53 ms fixed latency at 48 kHz on every path")
+    write("ambitap.room~", p)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     gens = [gen_encode, gen_rotate, gen_decode, gen_binaural, gen_mirror,
             gen_format, gen_vmic, gen_directional, gen_doppler, gen_compress,
-            gen_energyvec]
+            gen_energyvec, gen_bed2hoa, gen_distance, gen_panbin, gen_xtc,
+            gen_room]
     for g in gens:
         g()
     files = sorted(os.listdir(OUT))

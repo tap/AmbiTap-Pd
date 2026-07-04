@@ -16,6 +16,11 @@ void ambitap_directional_tilde_setup(void);
 void ambitap_doppler_tilde_setup(void);
 void ambitap_compress_tilde_setup(void);
 void ambitap_energyvec_tilde_setup(void);
+void ambitap_bed2hoa_tilde_setup(void);
+void ambitap_distance_tilde_setup(void);
+void ambitap_panbin_tilde_setup(void);
+void ambitap_xtc_tilde_setup(void);
+void ambitap_room_tilde_setup(void);
 
 extern "C" void ambitap_setup(void) {
     post("AmbiTap: higher-order ambisonics externals (AmbiX: ACN/SN3D)");
@@ -30,4 +35,9 @@ extern "C" void ambitap_setup(void) {
     ambitap_doppler_tilde_setup();
     ambitap_compress_tilde_setup();
     ambitap_energyvec_tilde_setup();
+    ambitap_bed2hoa_tilde_setup();
+    ambitap_distance_tilde_setup();
+    ambitap_panbin_tilde_setup();
+    ambitap_xtc_tilde_setup();
+    ambitap_room_tilde_setup();
 }
