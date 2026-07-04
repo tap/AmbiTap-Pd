@@ -42,7 +42,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
 
       - name: Configure
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
+        env:
+          # Passed via env (not direct ${{ }} interpolation) so the ';' in the
+          # macOS arch list reaches cmake as one token instead of being parsed
+          # as a shell command separator.
+          EXTRA_CMAKE_ARGS: ${{ matrix.cmake_args }}
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release $EXTRA_CMAKE_ARGS
 
       - name: Build
         run: cmake --build build --parallel
