@@ -499,8 +499,12 @@ def gen_room():
     er0 = p.msg(420, 348, "er 0")
     tl1 = p.msg(340, 384, "tail 1")
     tl0 = p.msg(420, 384, "tail 0")
-    for m in (rt, dx, dy, dz, dir1, dir0, er1, er0, tl1, tl0):
+    abf = p.msg(500, 312, "absorption fir")
+    abi = p.msg(500, 348, "absorption iir")
+    for m in (rt, dx, dy, dz, dir1, dir0, er1, er0, tl1, tl0, abf, abi):
         p.connect(m, 0, rm, 0)
+    p.text(500, 290, "absorption filter:")
+    p.text(500, 384, "iir = cheaper, approximate RT60")
     p.text(200, 253, "mono in -> (order+1)^2 HOA channels (wet room)")
     p.text(40, 430, "also: source_x/y/z, listener_x/y/z, gain, "
                     "rt60band <hz> <s>, reflections <x0 x1 y0 y1 z0 z1>")

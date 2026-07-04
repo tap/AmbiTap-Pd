@@ -19,6 +19,10 @@
 #X msg 420 348 er 0;
 #X msg 340 384 tail 1;
 #X msg 420 384 tail 0;
+#X msg 500 312 absorption fir;
+#X msg 500 348 absorption iir;
+#X text 500 290 absorption filter:;
+#X text 500 384 iir = cheaper, approximate RT60;
 #X text 200 253 mono in -> (order+1)^2 HOA channels (wet room);
 #X text 40 430 also: source_x/y/z, listener_x/y/z, gain, rt60band <hz> <s>, reflections <x0 x1 y0 y1 z0 z1>;
 #X text 40 450 note: ~53 ms fixed latency at 48 kHz on every path;
@@ -37,3 +41,5 @@
 #X connect 17 0 5 0;
 #X connect 18 0 5 0;
 #X connect 19 0 5 0;
+#X connect 20 0 5 0;
+#X connect 21 0 5 0;

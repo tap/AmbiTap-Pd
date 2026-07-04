@@ -152,6 +152,15 @@ static void room_gain(t_ambitap_room_tilde* x, t_floatarg f) {
     x->p->gain = std::max(static_cast<float>(f), 0.0f);
 }
 
+// absorption fir|iir — per-line loop filter. fir (default): verified 255-tap
+// linear-phase FIRs. iir: one cheap first-order low-pass per line (much lower
+// CPU, approximate mid-band RT60, slightly different late texture; the tail
+// stays level-calibrated).
+static void room_absorption(t_ambitap_room_tilde* x, t_symbol* s) {
+    using kind = ambitap::dsp::room::absorption_kind;
+    x->p->room->set_absorption_kind(s == gensym("iir") ? kind::iir : kind::fir);
+}
+
 // rt60band <center_hz> <seconds>.
 static void room_rt60band(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* argv) {
     if (argc < 2) return;
@@ -209,6 +218,7 @@ void ambitap_room_tilde_setup(void) {
     class_addmethod(c, reinterpret_cast<t_method>(room_er), gensym("er"), A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<t_method>(room_tail), gensym("tail"), A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<t_method>(room_gain), gensym("gain"), A_FLOAT, 0);
+    class_addmethod(c, reinterpret_cast<t_method>(room_absorption), gensym("absorption"), A_SYMBOL, 0);
     class_addmethod(c, reinterpret_cast<t_method>(room_rt60band), gensym("rt60band"), A_GIMME, 0);
     class_addmethod(c, reinterpret_cast<t_method>(room_reflections), gensym("reflections"), A_GIMME, 0);
 }
