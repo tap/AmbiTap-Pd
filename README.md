@@ -1,5 +1,7 @@
 # AmbiTap-Pd
 
+[![CI](https://github.com/tap/AmbiTap-Pd/actions/workflows/ci.yml/badge.svg)](https://github.com/tap/AmbiTap-Pd/actions/workflows/ci.yml)
+
 Pure Data externals for higher-order ambisonics (AmbiX: ACN ordering, SN3D
 normalization), built as thin wrappers over the **AmbiTap** library. The whole
 set ships as one library, `ambitap`, exposing `ambitap.*~` objects.
