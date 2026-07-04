@@ -89,6 +89,18 @@ On macOS and Linux, Pd's own symbols resolve at load time, so the vendored
 needs Pd's import library: pass `-DPD_LIB=/path/to/pd.lib` (from a Pd install's
 `bin/`). Windows is not yet exercised in CI.
 
+## Test
+
+```bash
+tests/load_smoke.sh                 # needs `pd` on PATH (built lib in externals/)
+```
+
+A headless load smoke test: it launches Pd with no GUI or audio, loads the
+library, instantiates every `ambitap.*~` object (`tests/smoke.pd`), turns DSP
+on, and quits — failing if the library doesn't load, any object can't be
+created, or Pd crashes. It complements the build check (which proves the
+externals *link*) by proving they actually *instantiate*. CI runs it on Linux.
+
 ## Use in Pd (≥ 0.54)
 
 Put this folder on Pd's search path (Preferences → Paths, or `-path`), then:
