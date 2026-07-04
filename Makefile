@@ -21,7 +21,8 @@ ARCHS    := -arch x86_64 -arch arm64
 CXX      := c++
 CC       := cc
 CPPFLAGS := -DPD -I$(PD_INCLUDE) -I$(AMBITAP_ROOT)/include -I$(EIGEN_ROOT)
-CXXFLAGS := -std=c++17 -O2 -fPIC $(ARCHS) -Wall
+# C++20: the AmbiTap core uses std::bit_cast (math/core/fast_math.h).
+CXXFLAGS := -std=c++20 -O2 -fPIC $(ARCHS) -Wall
 CFLAGS   := -O2 -fPIC $(ARCHS)
 # -undefined dynamic_lookup leaves Pd's symbols to be resolved at load; -lc++
 # links the C++ runtime (std::thread etc. used by the async processors).
