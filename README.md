@@ -9,7 +9,7 @@ Uses Pd's **multichannel signals** (Pd ≥ 0.54): one patch cord carries the who
 
 ## Status
 
-All eleven objects build into the single `ambitap` library, each with a help
+All sixteen objects build into the single `ambitap` library, each with a help
 patch. Order is a creation argument unless noted; parameters arrive as float or
 symbol messages on the left inlet.
 
@@ -26,9 +26,24 @@ symbol messages on the left inlet.
 | `ambitap.doppler~` | `<order>` | `distance` `speed_of_sound` `max_distance` |
 | `ambitap.compress~` | `<order>` | `threshold` `ratio` `attack` `release` `makeup_gain` |
 | `ambitap.energyvec~` | — | `smoothing_time` |
+| `ambitap.bed2hoa~` | `<order> <layout>` | `gain` |
+| `ambitap.distance~` | `<order>` | `distance` `reference_distance` `attenuation` `air_absorption` `speed_of_sound` `max_distance` `doppler` `nfc` |
+| `ambitap.panbin~` | — | `azimuth` `elevation` `gain` |
+| `ambitap.xtc~` | — | `span` `distance` `regularization` `bypass` |
+| `ambitap.room~` | `<order>` (0–3) | `dim_x/y/z` `source_x/y/z` `listener_x/y/z` `rt60` `direct` `er` `tail` `gain` `rt60band <hz> <s>` `reflections <x0 x1 y0 y1 z0 z1>` |
 
-`decode~` layouts: `stereo` `quad` `surround_5_1` `surround_7_1` `surround_7_1_4`
-`cube` `hexagon` `octagon` (`5.1`/`7.1`/`7.1.4` also accepted).
+`decode~` and `bed2hoa~` layouts: `stereo` `quad` `surround_5_1` `surround_7_1`
+`surround_7_1_4` `cube` `hexagon` `octagon` (`5.1`/`7.1`/`7.1.4` also accepted).
+
+The last five objects mirror the AmbiTap-Max object set: `bed2hoa~` (surround
+bed → HOA), `distance~` (Doppler + 1/r gain + air absorption + NFC-HOA),
+`panbin~` (direct per-source binaural, no ambisonic bus), `xtc~` (transaural
+crosstalk cancellation for two loudspeakers), and `room~` (image-source early
+reflections + SH-domain FDN reverb). `panbin~`, `xtc~`, and `room~` are
+convolution-based: they (re)allocate for the host block size / sample rate when
+the DSP graph is compiled and stay silent for non-power-of-two blocks. `xtc~`
+takes two signal inlets (left/right program) and outputs two **loudspeaker**
+feeds, not headphones.
 
 ## Layout
 
@@ -82,4 +97,6 @@ as the library is on Pd's path. Regenerate them with `python3 help/gen_help.py`.
 
 ## Roadmap
 
-- Make AmbiTap a git submodule once this is a published repo; add CI.
+- SOFA HRTF selection for `binaural~` (a `sofa` message to load a user file),
+  matching AmbiTap-Max. Deferred: it needs libmysofa built into the Makefile
+  and a Pd search-path resolver.

@@ -2,20 +2,10 @@ name: CI
 
 # Builds the AmbiTap-Pd library (universal x86_64 + arm64) on macOS and checks
 # that ambitap.pd_darwin came out fat, exports ambitap_setup, and registers all
-# 11 ambitap.*~ classes.
+# 16 ambitap.*~ classes.
 #
-# ONE-TIME SETUP — required because the AmbiTap submodule is a PRIVATE repo and
-# the default GITHUB_TOKEN cannot read a different private repo. Create a token
-# with read access to tap/AmbiTap and add it as the repo secret AMBITAP_PAT:
-#
-#   - Preferred: a fine-grained PAT scoped to tap/AmbiTap (and this repo),
-#     Repository permissions -> Contents: Read-only.
-#   - Or a classic PAT with the "repo" scope.
-#
-#   gh secret set AMBITAP_PAT --repo tap/AmbiTap-Pd      # paste the token
-#
-# (Secrets are per-repo, so the token set on AmbiTap-Max does not carry over.)
-# Until that secret exists, the "Require AMBITAP_PAT" step fails with a hint.
+# tap/AmbiTap (the submodule) is public, so the recursive checkout resolves it
+# with the default GITHUB_TOKEN — no PAT/secret needed.
 
 on:
   push:
@@ -26,18 +16,10 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Require AMBITAP_PAT secret (private AmbiTap submodule)
-        run: |
-          if [ -z "${{ secrets.AMBITAP_PAT }}" ]; then
-            echo "::error::Set the AMBITAP_PAT repo secret to a token with read access to the private tap/AmbiTap submodule (see .github/workflows/ci.yml)."
-            exit 1
-          fi
-
-      - name: Checkout (recursive — pulls the private AmbiTap submodule)
+      - name: Checkout (recursive — pulls the AmbiTap submodule)
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          token: ${{ secrets.AMBITAP_PAT }}
 
       - name: Install Eigen
         run: brew install eigen
@@ -45,7 +27,7 @@ jobs:
       - name: Build (universal)
         run: make EIGEN_ROOT="$(brew --prefix eigen)/include/eigen3"
 
-      - name: Verify universal library + all 11 classes
+      - name: Verify universal library + all 16 classes
         run: |
           set -euo pipefail
           LIB=externals/ambitap.pd_darwin
@@ -59,8 +41,8 @@ jobs:
 
           # count defined class-setup symbols on a single slice (a fat binary
           # lists each symbol once per arch)
-          n=$(nm -arch arm64 "$LIB" | grep ' T ' | grep -cE 'ambitap_[a-z]+_tilde_setupv')
+          n=$(nm -arch arm64 "$LIB" | grep ' T ' | grep -cE 'ambitap_[a-z0-9]+_tilde_setupv')
           echo "class setups: $n"
-          [ "$n" -ge 11 ] || { echo "::error::expected >= 11 class setups, got $n"; exit 1; }
+          [ "$n" -ge 16 ] || { echo "::error::expected >= 16 class setups, got $n"; exit 1; }
 
           echo "ambitap.pd_darwin OK: universal, ambitap_setup exported, $n classes"
