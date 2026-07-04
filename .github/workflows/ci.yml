@@ -79,3 +79,12 @@ jobs:
           archs=$(lipo -archs "$LIB")
           echo "archs: $archs"
           [ "$archs" = "x86_64 arm64" ] || { echo "::error::$LIB is not universal (got '$archs')"; exit 1; }
+
+      # Headless load test: actually instantiate every object in Pd (Linux only —
+      # puredata-core gives a GUI-less pd; the macOS pd cask is awkward to drive
+      # headless in CI). The build/verify steps cover macOS.
+      - name: Load smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y puredata-core || sudo apt-get install -y puredata
+          tests/load_smoke.sh
