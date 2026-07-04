@@ -32,7 +32,7 @@ symbol messages on the left inlet.
 | `ambitap.distance~` | `<order>` | `distance` `reference_distance` `attenuation` `air_absorption` `speed_of_sound` `max_distance` `doppler` `nfc` |
 | `ambitap.panbin~` | — | `azimuth` `elevation` `gain` |
 | `ambitap.xtc~` | — | `span` `distance` `regularization` `bypass` |
-| `ambitap.room~` | `<order>` (0–3) | `dim_x/y/z` `source_x/y/z` `listener_x/y/z` `rt60` `direct` `er` `tail` `gain` `rt60band <hz> <s>` `reflections <x0 x1 y0 y1 z0 z1>` |
+| `ambitap.room~` | `<order>` (0–3) | `dim_x/y/z` `source_x/y/z` `listener_x/y/z` `rt60` `direct` `er` `tail` `gain` `absorption` {`fir`,`iir`} `rt60band <hz> <s>` `reflections <x0 x1 y0 y1 z0 z1>` |
 
 `decode~` and `bed2hoa~` layouts: `stereo` `quad` `surround_5_1` `surround_7_1`
 `surround_7_1_4` `cube` `hexagon` `octagon` (`5.1`/`7.1`/`7.1.4` also accepted).
