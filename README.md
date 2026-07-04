@@ -51,8 +51,9 @@ feeds, not headphones.
 
 ```
 AmbiTap-Pd/
-├── Makefile              builds externals/ambitap.pd_darwin (universal)
-├── pd/m_pd.h             vendored Pd 0.55 header (build needs no Pd binary)
+├── CMakeLists.txt        builds externals/ambitap.<pd_darwin|pd_linux|dll>
+├── pd/m_pd.h             vendored Pd 0.55 header (mac/linux need no Pd binary)
+├── submodules/AmbiTap    the core library (headers + Ooura FFT), a submodule
 ├── src/
 │   ├── ambitap.<name>~.cpp   one file per class (+ its <name>_setup())
 │   └── ambitap_setup.cpp     ambitap_setup() — registers every class
@@ -69,13 +70,24 @@ etc. by symbol.
 
 ## Build
 
+CMake, consuming the AmbiTap core as a submodule (its `AmbiTap::ambitap` target
+supplies the headers, Eigen, the Ooura FFT, and C++20):
+
 ```bash
-make                       # -> externals/ambitap.pd_darwin (x86_64 + arm64)
-# AmbiTap elsewhere? make AMBITAP_ROOT=/path/to/AmbiTap
+git submodule update --init --recursive        # fetch the AmbiTap core
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel                 # -> externals/ambitap.pd_<platform>
 ```
 
-Pd symbols are resolved at load time, so only the vendored `pd/m_pd.h` is needed
-to build — no Pd installation required.
+Outputs `externals/ambitap.pd_darwin` (macOS), `.pd_linux` (Linux), or `.dll`
+(Windows). For a macOS universal binary add
+`-DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"`. To build against a core checkout
+outside the submodule, pass `-DAMBITAP_CORE_DIR=/path/to/AmbiTap`.
+
+On macOS and Linux, Pd's own symbols resolve at load time, so the vendored
+`pd/m_pd.h` is all that's needed — no Pd installation. **Windows** additionally
+needs Pd's import library: pass `-DPD_LIB=/path/to/pd.lib` (from a Pd install's
+`bin/`). Windows is not yet exercised in CI.
 
 ## Use in Pd (≥ 0.54)
 
