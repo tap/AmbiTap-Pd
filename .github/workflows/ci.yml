@@ -1,11 +1,12 @@
 name: CI
 
-# Builds the AmbiTap-Pd library (universal x86_64 + arm64) on macOS and checks
-# that ambitap.pd_darwin came out fat, exports ambitap_setup, and registers all
-# 16 ambitap.*~ classes.
+# Builds the AmbiTap-Pd library on macOS (universal x86_64 + arm64) and Linux
+# via CMake, and checks the Pd external exports ambitap_setup and registers all
+# 16 ambitap.*~ classes. tap/AmbiTap (the submodule) is public, so the default
+# GITHUB_TOKEN resolves the recursive checkout.
 #
-# tap/AmbiTap (the submodule) is public, so the recursive checkout resolves it
-# with the default GITHUB_TOKEN — no PAT/secret needed.
+# Windows (ambitap.dll) is not built here yet: it needs Pd's import library
+# (pd.lib) wired in — see -DPD_LIB in CMakeLists.txt / README.
 
 on:
   push:
@@ -14,35 +15,62 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            ext: pd_darwin
+            cmake_args: -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64
+          - os: ubuntu-latest
+            ext: pd_linux
+            cmake_args: ""
     steps:
       - name: Checkout (recursive — pulls the AmbiTap submodule)
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Eigen
+      - name: Install Eigen (macOS)
+        if: runner.os == 'macOS'
         run: brew install eigen
 
-      - name: Build (universal)
-        run: make EIGEN_ROOT="$(brew --prefix eigen)/include/eigen3"
+      - name: Install Eigen (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
 
-      - name: Verify universal library + all 16 classes
+      - name: Configure
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Verify external + all 16 classes
+        shell: bash
         run: |
           set -euo pipefail
-          LIB=externals/ambitap.pd_darwin
+          LIB="externals/ambitap.${{ matrix.ext }}"
           [ -f "$LIB" ] || { echo "::error::$LIB was not built"; exit 1; }
 
-          archs=$(lipo -archs "$LIB")
-          echo "archs: $archs"
-          [ "$archs" = "x86_64 arm64" ] || { echo "::error::$LIB is not universal (got '$archs')"; exit 1; }
+          # ambitap_setup must be a defined, exported text symbol (Mach-O prefixes
+          # C symbols with an underscore; ELF does not).
+          nm "$LIB" | grep -Eq ' T _?ambitap_setup$' \
+            || { echo "::error::ambitap_setup is not exported"; exit 1; }
 
-          nm -gU "$LIB" | grep -q ' _ambitap_setup$' || { echo "::error::ambitap_setup is not exported"; exit 1; }
-
-          # count defined class-setup symbols on a single slice (a fat binary
-          # lists each symbol once per arch)
-          n=$(nm -arch arm64 "$LIB" | grep ' T ' | grep -cE 'ambitap_[a-z0-9]+_tilde_setupv')
+          # Count distinct per-class setup symbols (mangled _tilde_setup names).
+          n=$(nm "$LIB" | grep -oE 'ambitap_[a-z0-9]+_tilde_setup' | sort -u | wc -l | tr -d ' ')
           echo "class setups: $n"
           [ "$n" -ge 16 ] || { echo "::error::expected >= 16 class setups, got $n"; exit 1; }
 
-          echo "ambitap.pd_darwin OK: universal, ambitap_setup exported, $n classes"
+          echo "$LIB OK: ambitap_setup exported, $n classes"
+
+      - name: Verify universal (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          LIB=externals/ambitap.pd_darwin
+          archs=$(lipo -archs "$LIB")
+          echo "archs: $archs"
+          [ "$archs" = "x86_64 arm64" ] || { echo "::error::$LIB is not universal (got '$archs')"; exit 1; }
