@@ -85,9 +85,10 @@ Outputs `externals/ambitap.pd_darwin` (macOS), `.pd_linux` (Linux), or `.dll`
 outside the submodule, pass `-DAMBITAP_CORE_DIR=/path/to/AmbiTap`.
 
 On macOS and Linux, Pd's own symbols resolve at load time, so the vendored
-`pd/m_pd.h` is all that's needed — no Pd installation. **Windows** additionally
-needs Pd's import library: pass `-DPD_LIB=/path/to/pd.lib` (from a Pd install's
-`bin/`). Windows is not yet exercised in CI.
+`pd/m_pd.h` is all that's needed — no Pd installation. **Windows** (MSVC) instead
+links against Pd's import library: pass `-DPD_LIB=/path/to/pd.lib` (from a Pd
+Windows distribution's `bin/`); CMake then exports the `ambitap_setup` entry
+point. All three platforms are built in CI.
 
 ## Test
 

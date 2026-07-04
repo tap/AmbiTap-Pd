@@ -1,12 +1,10 @@
 name: CI
 
-# Builds the AmbiTap-Pd library on macOS (universal x86_64 + arm64) and Linux
-# via CMake, and checks the Pd external exports ambitap_setup and registers all
-# 16 ambitap.*~ classes. tap/AmbiTap (the submodule) is public, so the default
-# GITHUB_TOKEN resolves the recursive checkout.
-#
-# Windows (ambitap.dll) is not built here yet: it needs Pd's import library
-# (pd.lib) wired in — see -DPD_LIB in CMakeLists.txt / README.
+# Builds the AmbiTap-Pd library via CMake on macOS (universal x86_64 + arm64),
+# Linux, and Windows (MSVC), and checks the Pd external exports ambitap_setup
+# (mac/linux also verify all 16 classes and run a headless load test; Windows
+# verifies the DLL exports the entry point). tap/AmbiTap (the submodule) is
+# public, so the default GITHUB_TOKEN resolves the recursive checkout.
 
 on:
   push:
@@ -88,3 +86,45 @@ jobs:
         run: |
           sudo apt-get install -y puredata-core || sudo apt-get install -y puredata
           tests/load_smoke.sh
+
+  # Windows is a separate job: it needs Pd's import library (pd.lib) for MSVC
+  # linking and a PE-export check instead of nm, so it doesn't share the matrix.
+  windows:
+    name: build (windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (recursive — pulls the AmbiTap submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MSVC (cl, link, dumpbin on PATH)
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Fetch Pd (for pd.lib)
+        shell: pwsh
+        run: |
+          $ver = "0.56-5"
+          Invoke-WebRequest "http://msp.ucsd.edu/Software/pd-$ver.msw.zip" -OutFile pd.zip
+          Expand-Archive pd.zip -DestinationPath pd-dist -Force
+          $lib = (Get-ChildItem -Recurse pd-dist -Filter pd.lib | Select-Object -First 1)
+          if (-not $lib) { throw "pd.lib not found in the Pd Windows distribution" }
+          "PD_LIB=$($lib.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "pd.lib: $($lib.FullName)"
+
+      - name: Configure
+        shell: pwsh
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DPD_LIB="$env:PD_LIB"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Verify DLL exports the entry point
+        shell: pwsh
+        run: |
+          $lib = Get-ChildItem -Recurse externals -Filter ambitap.dll | Select-Object -First 1
+          if (-not $lib) { throw "ambitap.dll was not built" }
+          Write-Host "built $($lib.FullName)"
+          $exports = dumpbin /exports $lib.FullName | Out-String
+          if ($exports -notmatch "ambitap_setup") { throw "ambitap_setup is not exported" }
+          Write-Host "ambitap.dll OK: ambitap_setup exported"
