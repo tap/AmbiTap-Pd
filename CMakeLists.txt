@@ -72,9 +72,15 @@ elseif(WIN32)
     if(NOT DEFINED PD_LIB)
         message(FATAL_ERROR
             "Windows build needs Pd's import library: pass -DPD_LIB=/path/to/pd.lib "
-            "(from a Pd install's bin/, or the pd-lib-builder / Pure Data SDK).")
+            "(from a Pd Windows distribution's bin/ — see .github/workflows/ci.yml).")
     endif()
+    target_compile_definitions(ambitap_pd PRIVATE MSW)   # Pd's Windows platform macro
     target_link_libraries(ambitap_pd PRIVATE "${PD_LIB}")
+    if(MSVC)
+        # Pd finds the library's entry point by name; MSVC exports nothing from
+        # a DLL unless told to, so export the (extern "C") setup function.
+        target_link_options(ambitap_pd PRIVATE "/EXPORT:ambitap_setup")
+    endif()
 else()
     set_target_properties(ambitap_pd PROPERTIES SUFFIX ".pd_linux")
 endif()
