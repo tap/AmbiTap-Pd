@@ -19,14 +19,15 @@
 /// passthrough (not delay-compensated). The shipped filters carry the X5 makeup
 /// attenuation (~-12 dB), so the cancelled path is noticeably quieter than
 /// bypass — match levels upstream when running the protocol.
-
-#include "ambitap_pd.h"
-
-#include "ambitap/dsp/xtc.h"
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
 #include <atomic>
 #include <memory>
 #include <mutex>
+
+#include "ambitap/dsp/xtc.h"
+#include "ambitap_pd.h"
 
 static t_class* ambitap_xtc_tilde_class;
 
@@ -35,10 +36,10 @@ struct xtc_impl {
     /// input = column. Built on the control thread; used only on the audio
     /// thread after ownership is handed over.
     struct convolver_quad {
-        ambitap::partitioned_convolver ll;    // left speaker  <- left input
-        ambitap::partitioned_convolver lr;    // left speaker  <- right input
-        ambitap::partitioned_convolver rl;    // right speaker <- left input
-        ambitap::partitioned_convolver rr;    // right speaker <- right input
+        ambitap::partitioned_convolver ll; // left speaker  <- left input
+        ambitap::partitioned_convolver lr; // left speaker  <- right input
+        ambitap::partitioned_convolver rl; // right speaker <- left input
+        ambitap::partitioned_convolver rr; // right speaker <- right input
 
         convolver_quad(size_t block_size, const ambitap::dsp::xtc& d)
             : ll(block_size, d.fir(0, 0).data(), d.fir(0, 0).size())
@@ -47,28 +48,31 @@ struct xtc_impl {
             , rr(block_size, d.fir(1, 1).data(), d.fir(1, 1).size()) {}
 
         /// out_l/out_r = quad applied to (in_l, in_r); tmp is caller scratch.
-        void process(const float* in_l, const float* in_r, float* out_l, float* out_r,
-                     float* tmp, int frames) {
+        void process(const float* in_l, const float* in_r, float* out_l, float* out_r, float* tmp, int frames) {
             ll.process(in_l, out_l);
             lr.process(in_r, tmp);
-            for (int i = 0; i < frames; ++i) out_l[i] += tmp[i];
+            for (int i = 0; i < frames; ++i) {
+                out_l[i] += tmp[i];
+            }
             rl.process(in_l, out_r);
             rr.process(in_r, tmp);
-            for (int i = 0; i < frames; ++i) out_r[i] += tmp[i];
+            for (int i = 0; i < frames; ++i) {
+                out_r[i] += tmp[i];
+            }
         }
     };
 
     std::mutex        control_mutex;
     ambitap::dsp::xtc design;
-    long              block_size {0};
-    double            sample_rate {0.0};
+    long              block_size{0};
+    double            sample_rate{0.0};
 
-    std::atomic<convolver_quad*> pending {nullptr};
-    std::atomic<convolver_quad*> trash {nullptr};
-    std::atomic<float>           bypass_target {0.0f};
+    std::atomic<convolver_quad*> pending{nullptr};
+    std::atomic<convolver_quad*> trash{nullptr};
+    std::atomic<float>           bypass_target{0.0f};
 
-    convolver_quad*    active {nullptr};
-    float              bypass_current {0.0f};
+    convolver_quad*    active{nullptr};
+    float              bypass_current{0.0f};
     std::vector<float> in_l, in_r, wet_l, wet_r, fade_l, fade_r, tmp;
 
     ~xtc_impl() {
@@ -80,9 +84,10 @@ struct xtc_impl {
     /// Publish a freshly built quad for the audio thread to crossfade to.
     /// Caller holds control_mutex; no-op until prepared.
     void publish() {
-        if (block_size == 0)
+        if (block_size == 0) {
             return;
-        delete trash.exchange(nullptr, std::memory_order_acq_rel);    // reap
+        }
+        delete trash.exchange(nullptr, std::memory_order_acq_rel); // reap
         auto quad = std::make_unique<convolver_quad>(static_cast<size_t>(block_size), design);
         delete pending.exchange(quad.release(), std::memory_order_acq_rel);
     }
@@ -96,13 +101,13 @@ struct xtc_impl {
 
         const bool valid = (vector_size >= 4) && ((vector_size & (vector_size - 1)) == 0);
         if (!valid) {
-            block_size = 0;    // unsupported vector size -> stay silent
+            block_size = 0; // unsupported vector size -> stay silent
             return;
         }
         block_size = vector_size;
         if (sr != sample_rate) {
             sample_rate = sr;
-            design.set_sample_rate(static_cast<float>(sr));    // redesigns the FIRs
+            design.set_sample_rate(static_cast<float>(sr)); // redesigns the FIRs
         }
         const auto v = static_cast<size_t>(vector_size);
         in_l.assign(v, 0.0f);
@@ -133,7 +138,10 @@ static t_int* xtc_perform(t_int* w) {
     using quad      = xtc_impl::convolver_quad;
 
     if (p->block_size == 0 || n != p->block_size) {
-        for (int i = 0; i < n; ++i) { out_l[i] = 0.0f; out_r[i] = 0.0f; }
+        for (int i = 0; i < n; ++i) {
+            out_l[i] = 0.0f;
+            out_r[i] = 0.0f;
+        }
         return w + 7;
     }
 
@@ -145,33 +153,39 @@ static t_int* xtc_perform(t_int* w) {
     }
 
     quad* incoming = nullptr;
-    if (p->trash.load(std::memory_order_relaxed) == nullptr)
+    if (p->trash.load(std::memory_order_relaxed) == nullptr) {
         incoming = p->pending.exchange(nullptr, std::memory_order_acq_rel);
+    }
 
     if (incoming && p->active) {
-        p->active->process(p->in_l.data(), p->in_r.data(), p->fade_l.data(), p->fade_r.data(),
-                           p->tmp.data(), n);
-        incoming->process(p->in_l.data(), p->in_r.data(), p->wet_l.data(), p->wet_r.data(),
-                          p->tmp.data(), n);
+        p->active->process(p->in_l.data(), p->in_r.data(), p->fade_l.data(), p->fade_r.data(), p->tmp.data(), n);
+        incoming->process(p->in_l.data(), p->in_r.data(), p->wet_l.data(), p->wet_r.data(), p->tmp.data(), n);
         const float step = 1.0f / static_cast<float>(n);
         float       fw   = 0.0f;
         for (int i = 0; i < n; ++i) {
             fw += step;
-            p->wet_l[static_cast<size_t>(i)] = p->fade_l[static_cast<size_t>(i)] + fw * (p->wet_l[static_cast<size_t>(i)] - p->fade_l[static_cast<size_t>(i)]);
-            p->wet_r[static_cast<size_t>(i)] = p->fade_r[static_cast<size_t>(i)] + fw * (p->wet_r[static_cast<size_t>(i)] - p->fade_r[static_cast<size_t>(i)]);
+            p->wet_l[static_cast<size_t>(i)] =
+                p->fade_l[static_cast<size_t>(i)]
+                + fw * (p->wet_l[static_cast<size_t>(i)] - p->fade_l[static_cast<size_t>(i)]);
+            p->wet_r[static_cast<size_t>(i)] =
+                p->fade_r[static_cast<size_t>(i)]
+                + fw * (p->wet_r[static_cast<size_t>(i)] - p->fade_r[static_cast<size_t>(i)]);
         }
         p->trash.store(p->active, std::memory_order_release);
         p->active = incoming;
     }
     else {
-        if (incoming)
-            p->active = incoming;    // first-ever quad: nothing to fade from
+        if (incoming) {
+            p->active = incoming; // first-ever quad: nothing to fade from
+        }
         if (!p->active) {
-            for (int i = 0; i < n; ++i) { out_l[i] = 0.0f; out_r[i] = 0.0f; }
+            for (int i = 0; i < n; ++i) {
+                out_l[i] = 0.0f;
+                out_r[i] = 0.0f;
+            }
             return w + 7;
         }
-        p->active->process(p->in_l.data(), p->in_r.data(), p->wet_l.data(), p->wet_r.data(),
-                           p->tmp.data(), n);
+        p->active->process(p->in_l.data(), p->in_r.data(), p->wet_l.data(), p->wet_r.data(), p->tmp.data(), n);
     }
 
     // Bypass: linear ramp from the previous mix to the target across this block.
@@ -180,8 +194,10 @@ static t_int* xtc_perform(t_int* w) {
     const float b_step = (target - b) / static_cast<float>(n);
     for (int i = 0; i < n; ++i) {
         b += b_step;
-        out_l[i] = p->wet_l[static_cast<size_t>(i)] + b * (p->in_l[static_cast<size_t>(i)] - p->wet_l[static_cast<size_t>(i)]);
-        out_r[i] = p->wet_r[static_cast<size_t>(i)] + b * (p->in_r[static_cast<size_t>(i)] - p->wet_r[static_cast<size_t>(i)]);
+        out_l[i] =
+            p->wet_l[static_cast<size_t>(i)] + b * (p->in_l[static_cast<size_t>(i)] - p->wet_l[static_cast<size_t>(i)]);
+        out_r[i] =
+            p->wet_r[static_cast<size_t>(i)] + b * (p->in_r[static_cast<size_t>(i)] - p->wet_r[static_cast<size_t>(i)]);
     }
     p->bypass_current = target;
     return w + 7;
@@ -219,19 +235,20 @@ static void* xtc_new(t_symbol*, int, t_atom*) {
     auto* x = reinterpret_cast<t_ambitap_xtc_tilde*>(pd_new(ambitap_xtc_tilde_class));
     x->p    = new xtc_impl();
     x->x_f  = 0;
-    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);   // second signal inlet (right)
+    inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal); // second signal inlet (right)
     outlet_new(&x->x_obj, &s_signal);
     outlet_new(&x->x_obj, &s_signal);
     return x;
 }
 
-static void xtc_free(t_ambitap_xtc_tilde* x) { delete x->p; }
+static void xtc_free(t_ambitap_xtc_tilde* x) {
+    delete x->p;
+}
 
 void ambitap_xtc_tilde_setup(void) {
-    t_class* c = class_new(gensym("ambitap.xtc~"),
-                           reinterpret_cast<t_newmethod>(xtc_new),
-                           reinterpret_cast<t_method>(xtc_free),
-                           sizeof(t_ambitap_xtc_tilde), CLASS_MULTICHANNEL, A_GIMME, 0);
+    t_class* c =
+        class_new(gensym("ambitap.xtc~"), reinterpret_cast<t_newmethod>(xtc_new), reinterpret_cast<t_method>(xtc_free),
+                  sizeof(t_ambitap_xtc_tilde), CLASS_MULTICHANNEL, A_GIMME, 0);
     ambitap_xtc_tilde_class = c;
     CLASS_MAINSIGNALIN(c, t_ambitap_xtc_tilde, x_f);
     class_addmethod(c, reinterpret_cast<t_method>(xtc_dsp), gensym("dsp"), A_CANT, 0);

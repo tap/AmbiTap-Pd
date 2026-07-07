@@ -13,31 +13,32 @@
 /// Note the fixed latency on every path (direct sound included):
 /// room.latency_samples() = max(3989 - round(0.030 * samplerate), 0) samples
 /// (~53 ms at 48 kHz) — the causality cost of the FDN's injection alignment.
-
-#include "ambitap_pd.h"
-
-#include "ambitap/dsp/room.h"
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
 #include <array>
 #include <cmath>
 #include <memory>
+
+#include "ambitap/dsp/room.h"
+#include "ambitap_pd.h"
 
 static t_class* ambitap_room_tilde_class;
 
 struct room_impl {
     std::unique_ptr<ambitap::dsp::room> room;
     int                                 nch;
-    long                                block_size {0};
-    float                               gain {1.0f};
-    float                               gain_smooth {1.0f};
+    long                                block_size{0};
+    float                               gain{1.0f};
+    float                               gain_smooth{1.0f};
     std::vector<float>                  in_buf;
     std::vector<float*>                 out_ptrs;
 
     // Tracked geometry (the room composes x/y/z together; Pd delivers one
     // component per message). Defaults mirror dsp::room's verified seed-11 set.
-    float dim[3] {7.10f, 5.30f, 3.10f};
-    float src[3] {3.674f, 1.137f, 1.977f};
-    float lis[3] {1.746f, 1.711f, 0.668f};
+    float dim[3]{7.10f, 5.30f, 3.10f};
+    float src[3]{3.674f, 1.137f, 1.977f};
+    float lis[3]{1.746f, 1.711f, 0.668f};
 
     // One-pole coefficient of the per-sample output-gain slew (~5 ms at 48 kHz).
     static constexpr float k_gain_slew = 1.0f / 256.0f;
@@ -63,19 +64,23 @@ static t_int* room_perform(t_int* w) {
     const int  nch = p->nch;
 
     if (!p->room->is_prepared() || n != p->block_size) {
-        for (int c = 0; c < nch; ++c)
-            for (int i = 0; i < n; ++i)
+        for (int c = 0; c < nch; ++c) {
+            for (int i = 0; i < n; ++i) {
                 out[c * n + i] = 0.0f;
+            }
+        }
         return w + 5;
     }
 
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i) {
         p->in_buf[static_cast<size_t>(i)] = in[i];
+    }
 
     // Each output channel is a contiguous planar block (out + c*n), exactly the
     // planar layout room::process writes — point the room straight at it.
-    for (int c = 0; c < nch; ++c)
+    for (int c = 0; c < nch; ++c) {
         p->out_ptrs[static_cast<size_t>(c)] = reinterpret_cast<float*>(out + c * n);
+    }
     p->room->process(p->in_buf.data(), p->out_ptrs.data(), static_cast<size_t>(n));
 
     // Smoothed output gain, applied in place (same ramp on every channel).
@@ -101,7 +106,7 @@ static void room_dsp(t_ambitap_room_tilde* x, t_signal** sp) {
 
     const bool valid = (n >= 4) && ((n & (n - 1)) == 0);
     if (!valid) {
-        p->block_size = 0;    // unsupported vector size -> stay silent
+        p->block_size = 0; // unsupported vector size -> stay silent
     }
     else {
         p->block_size = n;
@@ -116,25 +121,43 @@ static void room_set_dim(t_ambitap_room_tilde* x, int idx, t_floatarg f) {
     x->p->dim[idx] = static_cast<float>(f);
     x->p->room->set_room_dimensions(x->p->dim[0], x->p->dim[1], x->p->dim[2]);
 }
-static void room_dim_x(t_ambitap_room_tilde* x, t_floatarg f) { room_set_dim(x, 0, f); }
-static void room_dim_y(t_ambitap_room_tilde* x, t_floatarg f) { room_set_dim(x, 1, f); }
-static void room_dim_z(t_ambitap_room_tilde* x, t_floatarg f) { room_set_dim(x, 2, f); }
+static void room_dim_x(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_dim(x, 0, f);
+}
+static void room_dim_y(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_dim(x, 1, f);
+}
+static void room_dim_z(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_dim(x, 2, f);
+}
 
 static void room_set_src(t_ambitap_room_tilde* x, int idx, t_floatarg f) {
     x->p->src[idx] = static_cast<float>(f);
     x->p->room->set_source_position(x->p->src[0], x->p->src[1], x->p->src[2]);
 }
-static void room_source_x(t_ambitap_room_tilde* x, t_floatarg f) { room_set_src(x, 0, f); }
-static void room_source_y(t_ambitap_room_tilde* x, t_floatarg f) { room_set_src(x, 1, f); }
-static void room_source_z(t_ambitap_room_tilde* x, t_floatarg f) { room_set_src(x, 2, f); }
+static void room_source_x(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_src(x, 0, f);
+}
+static void room_source_y(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_src(x, 1, f);
+}
+static void room_source_z(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_src(x, 2, f);
+}
 
 static void room_set_lis(t_ambitap_room_tilde* x, int idx, t_floatarg f) {
     x->p->lis[idx] = static_cast<float>(f);
     x->p->room->set_listener_position(x->p->lis[0], x->p->lis[1], x->p->lis[2]);
 }
-static void room_listener_x(t_ambitap_room_tilde* x, t_floatarg f) { room_set_lis(x, 0, f); }
-static void room_listener_y(t_ambitap_room_tilde* x, t_floatarg f) { room_set_lis(x, 1, f); }
-static void room_listener_z(t_ambitap_room_tilde* x, t_floatarg f) { room_set_lis(x, 2, f); }
+static void room_listener_x(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_lis(x, 0, f);
+}
+static void room_listener_y(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_lis(x, 1, f);
+}
+static void room_listener_z(t_ambitap_room_tilde* x, t_floatarg f) {
+    room_set_lis(x, 2, f);
+}
 
 static void room_rt60(t_ambitap_room_tilde* x, t_floatarg f) {
     x->p->room->set_rt60(static_cast<float>(f));
@@ -163,7 +186,9 @@ static void room_absorption(t_ambitap_room_tilde* x, t_symbol* s) {
 
 // rt60band <center_hz> <seconds>.
 static void room_rt60band(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* argv) {
-    if (argc < 2) return;
+    if (argc < 2) {
+        return;
+    }
     const double hz  = atom_getfloat(argv);
     const float  sec = static_cast<float>(atom_getfloat(argv + 1));
     for (size_t b = 0; b < ambitap::dsp::room::k_rt60_bands; ++b) {
@@ -177,10 +202,13 @@ static void room_rt60band(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* 
 
 // reflections <x0 x1 y0 y1 z0 z1>: six wall amplitude coefficients (0..1).
 static void room_reflections(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* argv) {
-    if (argc < static_cast<int>(ambitap::dsp::room::k_walls)) return;
-    std::array<float, ambitap::dsp::room::k_walls> c {};
-    for (size_t w = 0; w < c.size(); ++w)
+    if (argc < static_cast<int>(ambitap::dsp::room::k_walls)) {
+        return;
+    }
+    std::array<float, ambitap::dsp::room::k_walls> c{};
+    for (size_t w = 0; w < c.size(); ++w) {
         c[w] = static_cast<float>(atom_getfloat(argv + w));
+    }
     x->p->room->set_wall_reflections(c);
 }
 
@@ -194,13 +222,14 @@ static void* room_new(t_symbol*, int argc, t_atom* argv) {
     return x;
 }
 
-static void room_free(t_ambitap_room_tilde* x) { delete x->p; }
+static void room_free(t_ambitap_room_tilde* x) {
+    delete x->p;
+}
 
 void ambitap_room_tilde_setup(void) {
-    t_class* c = class_new(gensym("ambitap.room~"),
-                           reinterpret_cast<t_newmethod>(room_new),
-                           reinterpret_cast<t_method>(room_free),
-                           sizeof(t_ambitap_room_tilde), CLASS_MULTICHANNEL, A_GIMME, 0);
+    t_class* c =
+        class_new(gensym("ambitap.room~"), reinterpret_cast<t_newmethod>(room_new),
+                  reinterpret_cast<t_method>(room_free), sizeof(t_ambitap_room_tilde), CLASS_MULTICHANNEL, A_GIMME, 0);
     ambitap_room_tilde_class = c;
     CLASS_MAINSIGNALIN(c, t_ambitap_room_tilde, x_f);
     class_addmethod(c, reinterpret_cast<t_method>(room_dsp), gensym("dsp"), A_CANT, 0);

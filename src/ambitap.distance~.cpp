@@ -9,13 +9,14 @@
 /// air-absorption one-pole are applied uniformly across channels (spatial
 /// encoding preserved); the per-order NFC shelf runs last. Air-absorption
 /// cutoff model: fc(d) = 20 kHz / (1 + amount * 0.1/m * max(d - d_ref, 0)).
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#include "ambitap_pd.h"
+#include <cmath>
 
 #include "ambitap/dsp/doppler.h"
 #include "ambitap/dsp/nfc.h"
-
-#include <cmath>
+#include "ambitap_pd.h"
 
 static t_class* ambitap_distance_tilde_class;
 
@@ -23,18 +24,18 @@ struct distance_impl {
     ambitap::dsp::doppler dop;
     ambitap::dsp::nfc     nfc;
     int                   nch;
-    float                 fs {48000.0f};
+    float                 fs{48000.0f};
 
     // Control-thread parameters (smoothed on the audio thread).
-    float distance {1.0f};
-    float reference_distance {1.0f};
-    float attenuation {1.0f};
-    float air_absorption {0.0f};
-    bool  doppler_on {true};
-    bool  nfc_on {true};
+    float distance{1.0f};
+    float reference_distance{1.0f};
+    float attenuation{1.0f};
+    float air_absorption{0.0f};
+    bool  doppler_on{true};
+    bool  nfc_on{true};
 
     // Audio-thread state.
-    float              distance_smooth {1.0f};
+    float              distance_smooth{1.0f};
     std::vector<float> frame;
     std::vector<float> lp_state;
 
@@ -75,13 +76,15 @@ static t_int* distance_perform(t_int* w) {
     float*      frame    = p->frame.data();
 
     for (int i = 0; i < n; ++i) {
-        for (int c = 0; c < nch; ++c)
+        for (int c = 0; c < nch; ++c) {
             frame[c] = (c < in_nch) ? in[c * n + i] : 0.0f;
+        }
 
         // 1. Propagation delay (Doppler): the library slews the delay
         //    internally, producing the pitch glide on distance jumps.
-        if (dop_on)
+        if (dop_on) {
             p->dop.process_frame(frame, frame);
+        }
 
         // Smooth the distance for the gain/absorption cues.
         p->distance_smooth += (d_target - p->distance_smooth) * distance_impl::k_distance_slew;
@@ -110,11 +113,13 @@ static t_int* distance_perform(t_int* w) {
 
         // 4. Near-field compensation: per-order bass shelf referencing the
         //    decoder radius (identity when d == d_ref).
-        if (nfc_on)
+        if (nfc_on) {
             p->nfc.process_frame(frame, frame);
+        }
 
-        for (int c = 0; c < nch; ++c)
+        for (int c = 0; c < nch; ++c) {
             out[c * n + i] = frame[c];
+        }
     }
     return w + 6;
 }
@@ -127,8 +132,8 @@ static void distance_dsp(t_ambitap_distance_tilde* x, t_signal** sp) {
     std::fill(p->lp_state.begin(), p->lp_state.end(), 0.0f);
     p->distance_smooth = std::max(p->distance, ambitap::dsp::nfc::k_min_distance);
     signal_setmultiout(&sp[1], p->nch);
-    dsp_add(distance_perform, 5, x, sp[0]->s_vec, static_cast<t_int>(sp[0]->s_nchans),
-            sp[1]->s_vec, static_cast<t_int>(sp[0]->s_length));
+    dsp_add(distance_perform, 5, x, sp[0]->s_vec, static_cast<t_int>(sp[0]->s_nchans), sp[1]->s_vec,
+            static_cast<t_int>(sp[0]->s_length));
 }
 
 static void distance_distance(t_ambitap_distance_tilde* x, t_floatarg f) {
@@ -163,20 +168,21 @@ static void distance_nfc(t_ambitap_distance_tilde* x, t_floatarg f) {
 static void* distance_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_distance_tilde*>(pd_new(ambitap_distance_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 1, ambitap::max_order);
+    ord       = std::clamp(ord, 1, ambitap::k_max_order);
     x->p      = new distance_impl(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);
     return x;
 }
 
-static void distance_free(t_ambitap_distance_tilde* x) { delete x->p; }
+static void distance_free(t_ambitap_distance_tilde* x) {
+    delete x->p;
+}
 
 void ambitap_distance_tilde_setup(void) {
-    t_class* c = class_new(gensym("ambitap.distance~"),
-                           reinterpret_cast<t_newmethod>(distance_new),
-                           reinterpret_cast<t_method>(distance_free),
-                           sizeof(t_ambitap_distance_tilde), CLASS_MULTICHANNEL, A_GIMME, 0);
+    t_class* c                   = class_new(gensym("ambitap.distance~"), reinterpret_cast<t_newmethod>(distance_new),
+                                             reinterpret_cast<t_method>(distance_free), sizeof(t_ambitap_distance_tilde),
+                                             CLASS_MULTICHANNEL, A_GIMME, 0);
     ambitap_distance_tilde_class = c;
     CLASS_MAINSIGNALIN(c, t_ambitap_distance_tilde, x_f);
     class_addmethod(c, reinterpret_cast<t_method>(distance_dsp), gensym("dsp"), A_CANT, 0);

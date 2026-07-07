@@ -2,6 +2,8 @@
 /// Library setup for the AmbiTap Pure Data externals. Pd calls ambitap_setup()
 /// when the library loads (e.g. via [declare -lib ambitap]); it registers every
 /// ambitap.*~ class. Each object's own <name>_setup() lives in its source file.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
 #include "m_pd.h"
 
