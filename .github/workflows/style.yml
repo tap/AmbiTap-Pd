@@ -1,0 +1,25 @@
+name: Tap House Style
+
+# Enforces the shared Tap House Rules: a drift check against the canonical
+# TapHouse configs, and a clang-format check.
+#
+# clang-tidy enforcement is intentionally deferred: it needs the externals to
+# compile, which requires the AmbiTap submodule to carry the k_ constant
+# rename. Add a clang-tidy job here once submodules/AmbiTap is bumped to the
+# restyled core.
+on: [push, pull_request]
+
+jobs:
+  drift:
+    uses: tap/taphouse/.github/workflows/drift-check.yml@main
+    with:
+      ref: main
+
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+      - name: clang-format check
+        run: clang-format-18 --dry-run --Werror $(git ls-files 'src/*.cpp' 'src/*.h')
