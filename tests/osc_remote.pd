@@ -1,0 +1,14 @@
+#N canvas 60 60 520 300 12;
+#X text 20 10 osc_remote_test.sh harness: prints whatever ambitap.ui-remote routes out of each outlet \, then quits itself (the script sends OSC while this runs).;
+#X obj 20 80 ambitap.ui-remote 7501;
+#X obj 20 120 print src1;
+#X obj 140 120 print src2;
+#X obj 260 120 print orient;
+#X obj 20 180 loadbang;
+#X msg 20 240 \; pd quit;
+#X obj 20 210 delay 3000;
+#X connect 1 0 2 0;
+#X connect 1 1 3 0;
+#X connect 1 2 4 0;
+#X connect 5 0 7 0;
+#X connect 7 0 6 0;

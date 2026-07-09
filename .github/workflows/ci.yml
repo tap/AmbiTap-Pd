@@ -87,6 +87,14 @@ jobs:
           sudo apt-get install -y puredata-core || sudo apt-get install -y puredata
           tests/load_smoke.sh
 
+      # End-to-end OSC remote-surface test: fire the exact binary OSC the
+      # browser widgets emit (via ui/scripts/osc-bridge.mjs) at a headless Pd
+      # running the ambitap.ui-remote abstraction and assert the routed
+      # ambitap.*~ messages come out of the right outlets.
+      - name: OSC remote-surface test (Linux)
+        if: runner.os == 'Linux'
+        run: tests/osc_remote_test.sh
+
   # Windows is a separate job: it needs Pd's import library (pd.lib) for MSVC
   # linking and a PE-export check instead of nm, so it doesn't share the matrix.
   windows:

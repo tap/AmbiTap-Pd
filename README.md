@@ -68,6 +68,25 @@ dotted class names work cleanly: Pd derives the setup symbol from the *filename*
 (`ambitap` → `ambitap_setup`), and that function registers `ambitap.encode~`
 etc. by symbol.
 
+## UI remote surface
+
+The AmbiTap UI widgets (library repo, `ui/` — panner, rotation ball, and the
+analysis dashboard, all running the verified core as WebAssembly) drive these
+externals over OSC. Pure vanilla receive path — no external OSC library:
+
+```
+browser dashboard (?remote=ws://localhost:8090)
+  -> node ui/scripts/osc-bridge.mjs          (WebSocket -> UDP relay)
+  -> [ambitap.ui-remote 7500]                (abstractions/; netreceive -u -b + oscparse)
+  -> ambitap.encode~ / ambitap.rotate~ ...   (azimuth/elevation/yaw/pitch/roll, radians)
+```
+
+`abstractions/ambitap.ui-remote.pd` routes `/ambitap/source/<id>/direction`
+to per-source outlets and `/ambitap/orientation` to an orientation outlet;
+`help/ambitap.ui-remote-help.pd` is a complete listening patch (two sources ->
+rotate -> binaural). Add `abstractions/` to Pd's search path. CI runs the
+route end-to-end headless (`tests/osc_remote_test.sh`).
+
 ## Build
 
 CMake, consuming the AmbiTap core as a submodule (its `AmbiTap::ambitap` target
