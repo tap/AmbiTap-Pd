@@ -11,7 +11,7 @@
 #X floatatom 340 120 5 0 0 0 - - - 0;
 #X msg 340 144 gain $1;
 #X text 400 122 gain (linear);
-#X msg 340 200 azimuth 90;
+#X msg 340 200 azimuth 1.57;
 #X msg 340 240 elevation 0;
 #X text 200 253 HOA in -> shaped HOA out;
 #X text 340 290 messages: gain / azimuth / elevation;
