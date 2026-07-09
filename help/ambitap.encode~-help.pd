@@ -9,8 +9,8 @@
 #X obj 40 360 dac~;
 #X floatatom 340 120 5 0 0 0 - - - 0;
 #X msg 340 144 azimuth $1;
-#X text 400 122 azimuth (deg);
-#X msg 340 200 elevation 30;
+#X text 400 122 azimuth (rad \, pi/2 = left);
+#X msg 340 200 elevation 0.5;
 #X msg 340 240 gain 1;
 #X text 200 203 outlet: (order+1)^2 HOA channels (multichannel);
 #X text 200 303 headphone monitor (binaural);
