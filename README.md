@@ -141,6 +141,15 @@ end in `binaural~ → dac~` so they're audible on headphones) and message boxes 
 every parameter. They `[declare -lib ambitap]` themselves, so they work as soon
 as the library is on Pd's path. Regenerate them with `python3 help/gen_help.py`.
 
+## Book companion patch
+
+`booklet/01-first-sounds.pd` is the Pure Data companion for [*Hearing in
+Three Dimensions*](https://github.com/tap/AmbiTap/tree/main/book), the
+AmbiTap book — chapter 18 ("The same patch in Pd") rebuilds the book's
+first-sounds patch here and maps every Max idiom to its Pd equivalent.
+The book's other companion patches live in AmbiTap-Max
+(`patchers/booklet/`).
+
 ## Roadmap
 
 - SOFA HRTF selection for `binaural~` (a `sofa` message to load a user file),
