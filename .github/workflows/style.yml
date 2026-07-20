@@ -7,9 +7,9 @@ on: [push, pull_request]
 
 jobs:
   drift:
-    uses: tap/taphouse/.github/workflows/drift-check.yml@v1
+    uses: tap/taphouse/.github/workflows/drift-check.yml@v4
     with:
-      ref: v1
+      ref: v4
 
   clang-format:
     runs-on: ubuntu-latest
