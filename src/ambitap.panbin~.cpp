@@ -70,7 +70,7 @@ struct panbin_impl {
     std::unique_ptr<convolver_pair> build_pair() {
         float sh[tap::ambi::k_max_channel_count];
         tap::ambi::evaluate_sh(tap::ambi::builtin_hrtf_order, static_cast<float>(azimuth_value),
-                             static_cast<float>(elevation_value), sh);
+                               static_cast<float>(elevation_value), sh);
 
         std::vector<float> l(tap::ambi::builtin_hrtf_length, 0.0f);
         std::vector<float> r(tap::ambi::builtin_hrtf_length, 0.0f);

@@ -14,9 +14,9 @@ static t_class* ambitap_binaural_tilde_class;
 
 struct binaural_impl {
     tap::ambi::dsp::binaural_renderer rend;
-    int                             ch;
-    std::vector<const float*>       in_ptrs;
-    std::vector<float>              zero;
+    int                               ch;
+    std::vector<const float*>         in_ptrs;
+    std::vector<float>                zero;
 
     explicit binaural_impl(int order)
         : rend(order)

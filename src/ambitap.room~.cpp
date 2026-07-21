@@ -27,12 +27,12 @@ static t_class* ambitap_room_tilde_class;
 
 struct room_impl {
     std::unique_ptr<tap::ambi::dsp::room> room;
-    int                                 nch;
-    long                                block_size{0};
-    float                               gain{1.0f};
-    float                               gain_smooth{1.0f};
-    std::vector<float>                  in_buf;
-    std::vector<float*>                 out_ptrs;
+    int                                   nch;
+    long                                  block_size{0};
+    float                                 gain{1.0f};
+    float                                 gain_smooth{1.0f};
+    std::vector<float>                    in_buf;
+    std::vector<float*>                   out_ptrs;
 
     // Tracked geometry (the room composes x/y/z together; Pd delivers one
     // component per message). Defaults mirror dsp::room's verified seed-11 set.

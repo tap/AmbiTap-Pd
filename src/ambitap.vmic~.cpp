@@ -10,9 +10,9 @@ static t_class* ambitap_vmic_tilde_class;
 
 struct vmic_impl {
     tap::ambi::dsp::virtual_mic mic;
-    int                       ch;
-    std::vector<const float*> in_ptrs;
-    std::vector<float>        zero;
+    int                         ch;
+    std::vector<const float*>   in_ptrs;
+    std::vector<float>          zero;
 
     explicit vmic_impl(int order)
         : mic(order)
