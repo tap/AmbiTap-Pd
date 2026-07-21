@@ -36,12 +36,12 @@ struct xtc_impl {
     /// input = column. Built on the control thread; used only on the audio
     /// thread after ownership is handed over.
     struct convolver_quad {
-        ambitap::partitioned_convolver ll; // left speaker  <- left input
-        ambitap::partitioned_convolver lr; // left speaker  <- right input
-        ambitap::partitioned_convolver rl; // right speaker <- left input
-        ambitap::partitioned_convolver rr; // right speaker <- right input
+        tap::ambi::partitioned_convolver ll; // left speaker  <- left input
+        tap::ambi::partitioned_convolver lr; // left speaker  <- right input
+        tap::ambi::partitioned_convolver rl; // right speaker <- left input
+        tap::ambi::partitioned_convolver rr; // right speaker <- right input
 
-        convolver_quad(size_t block_size, const ambitap::dsp::xtc& d)
+        convolver_quad(size_t block_size, const tap::ambi::dsp::xtc& d)
             : ll(block_size, d.fir(0, 0).data(), d.fir(0, 0).size())
             , lr(block_size, d.fir(0, 1).data(), d.fir(0, 1).size())
             , rl(block_size, d.fir(1, 0).data(), d.fir(1, 0).size())
@@ -63,7 +63,7 @@ struct xtc_impl {
     };
 
     std::mutex        control_mutex;
-    ambitap::dsp::xtc design;
+    tap::ambi::dsp::xtc design;
     long              block_size{0};
     double            sample_rate{0.0};
 

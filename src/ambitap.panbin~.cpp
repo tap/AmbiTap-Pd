@@ -6,8 +6,8 @@
 /// Reuse path: reconstruct the per-ear HRIRs the way
 /// binaural_renderer::probe_response does (evaluate the SH basis at the
 /// direction and sum the built-in order-5 KEMAR SH-domain FIRs weighted by
-/// those coefficients), resample to the host rate with ambitap::resample_fir,
-/// and feed one ambitap::partitioned_convolver per ear.
+/// those coefficients), resample to the host rate with tap::ambi::resample_fir,
+/// and feed one tap::ambi::partitioned_convolver per ear.
 ///
 /// Direction changes are click-free. The azimuth/elevation handlers run on the
 /// control thread, where they rebuild the two-convolver pair (allocation is
@@ -36,8 +36,8 @@ struct panbin_impl {
     /// One HRIR-loaded convolver per ear. Built on the control thread; used
     /// (and only used) on the audio thread after ownership is handed over.
     struct convolver_pair {
-        ambitap::partitioned_convolver left;
-        ambitap::partitioned_convolver right;
+        tap::ambi::partitioned_convolver left;
+        tap::ambi::partitioned_convolver right;
 
         convolver_pair(size_t block_size, const std::vector<float>& l, const std::vector<float>& r)
             : left(block_size, l.data(), l.size())
@@ -68,23 +68,23 @@ struct panbin_impl {
     /// binaural_renderer::probe_response performs), resampled to the host rate,
     /// wrapped in a fresh convolver pair. Control thread only.
     std::unique_ptr<convolver_pair> build_pair() {
-        float sh[ambitap::k_max_channel_count];
-        ambitap::evaluate_sh(ambitap::builtin_hrtf_order, static_cast<float>(azimuth_value),
+        float sh[tap::ambi::k_max_channel_count];
+        tap::ambi::evaluate_sh(tap::ambi::builtin_hrtf_order, static_cast<float>(azimuth_value),
                              static_cast<float>(elevation_value), sh);
 
-        std::vector<float> l(ambitap::builtin_hrtf_length, 0.0f);
-        std::vector<float> r(ambitap::builtin_hrtf_length, 0.0f);
-        for (size_t ch = 0; ch < ambitap::builtin_hrtf_channels; ++ch) {
-            for (size_t t = 0; t < ambitap::builtin_hrtf_length; ++t) {
-                l[t] += sh[ch] * ambitap::builtin_hrtf_left[ch][t];
-                r[t] += sh[ch] * ambitap::builtin_hrtf_right[ch][t];
+        std::vector<float> l(tap::ambi::builtin_hrtf_length, 0.0f);
+        std::vector<float> r(tap::ambi::builtin_hrtf_length, 0.0f);
+        for (size_t ch = 0; ch < tap::ambi::builtin_hrtf_channels; ++ch) {
+            for (size_t t = 0; t < tap::ambi::builtin_hrtf_length; ++t) {
+                l[t] += sh[ch] * tap::ambi::builtin_hrtf_left[ch][t];
+                r[t] += sh[ch] * tap::ambi::builtin_hrtf_right[ch][t];
             }
         }
 
         const auto host_rate = static_cast<float>(sample_rate);
-        if (host_rate != ambitap::builtin_hrtf_sample_rate) {
-            l = ambitap::resample_fir(l.data(), l.size(), ambitap::builtin_hrtf_sample_rate, host_rate);
-            r = ambitap::resample_fir(r.data(), r.size(), ambitap::builtin_hrtf_sample_rate, host_rate);
+        if (host_rate != tap::ambi::builtin_hrtf_sample_rate) {
+            l = tap::ambi::resample_fir(l.data(), l.size(), tap::ambi::builtin_hrtf_sample_rate, host_rate);
+            r = tap::ambi::resample_fir(r.data(), r.size(), tap::ambi::builtin_hrtf_sample_rate, host_rate);
         }
         return std::make_unique<convolver_pair>(static_cast<size_t>(block_size), l, r);
     }

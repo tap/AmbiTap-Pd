@@ -13,7 +13,7 @@
 static t_class* ambitap_binaural_tilde_class;
 
 struct binaural_impl {
-    ambitap::dsp::binaural_renderer rend;
+    tap::ambi::dsp::binaural_renderer rend;
     int                             ch;
     std::vector<const float*>       in_ptrs;
     std::vector<float>              zero;
@@ -73,14 +73,14 @@ static void binaural_roll(t_ambitap_binaural_tilde* x, t_floatarg f) {
     x->p->rend.set_roll(static_cast<float>(f));
 }
 static void binaural_hrtf(t_ambitap_binaural_tilde* x, t_symbol* s) {
-    using proj = ambitap::dsp::binaural_renderer::hrtf_projection;
+    using proj = tap::ambi::dsp::binaural_renderer::hrtf_projection;
     x->p->rend.set_projection(!std::strcmp(s->s_name, "magls") ? proj::magls : proj::ls);
 }
 
 static void* binaural_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_binaural_tilde*>(pd_new(ambitap_binaural_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 1, ambitap::builtin_hrtf_order);
+    ord       = std::clamp(ord, 1, tap::ambi::builtin_hrtf_order);
     x->p      = new binaural_impl(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);

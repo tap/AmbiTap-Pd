@@ -21,8 +21,8 @@
 static t_class* ambitap_distance_tilde_class;
 
 struct distance_impl {
-    ambitap::dsp::doppler dop;
-    ambitap::dsp::nfc     nfc;
+    tap::ambi::dsp::doppler dop;
+    tap::ambi::dsp::nfc     nfc;
     int                   nch;
     float                 fs{48000.0f};
 
@@ -65,7 +65,7 @@ static t_int* distance_perform(t_int* w) {
     const int      n      = static_cast<int>(w[5]);
     distance_impl* p      = x->p;
     const int      nch    = p->nch;
-    const float    d_min  = ambitap::dsp::nfc::k_min_distance;
+    const float    d_min  = tap::ambi::dsp::nfc::k_min_distance;
 
     const float d_target = std::max(p->distance, d_min);
     const float d_ref    = std::max(p->reference_distance, d_min);
@@ -130,7 +130,7 @@ static void distance_dsp(t_ambitap_distance_tilde* x, t_signal** sp) {
     p->dop.prepare(p->fs);
     p->nfc.prepare(p->fs);
     std::fill(p->lp_state.begin(), p->lp_state.end(), 0.0f);
-    p->distance_smooth = std::max(p->distance, ambitap::dsp::nfc::k_min_distance);
+    p->distance_smooth = std::max(p->distance, tap::ambi::dsp::nfc::k_min_distance);
     signal_setmultiout(&sp[1], p->nch);
     dsp_add(distance_perform, 5, x, sp[0]->s_vec, static_cast<t_int>(sp[0]->s_nchans), sp[1]->s_vec,
             static_cast<t_int>(sp[0]->s_length));
@@ -168,7 +168,7 @@ static void distance_nfc(t_ambitap_distance_tilde* x, t_floatarg f) {
 static void* distance_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_distance_tilde*>(pd_new(ambitap_distance_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 1, ambitap::k_max_order);
+    ord       = std::clamp(ord, 1, tap::ambi::k_max_order);
     x->p      = new distance_impl(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);

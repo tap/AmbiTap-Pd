@@ -3,7 +3,7 @@
 /// sound + image-source early reflections + a 16-line SH-domain FDN late tail.
 /// Order is a creation argument (default 1, max 3).
 ///
-/// DSP lives in ambitap::dsp::room — the real-time realization verified against
+/// DSP lives in tap::ambi::dsp::room — the real-time realization verified against
 /// the R1-R10 gates in the AmbiTap library's docs/PERCEPTUAL-VERIFICATION.md.
 /// Geometry / RT60 changes are rebuilt on the library's worker thread and
 /// crossfaded in; the audio path is wait-free. The room state is (re)allocated
@@ -26,7 +26,7 @@
 static t_class* ambitap_room_tilde_class;
 
 struct room_impl {
-    std::unique_ptr<ambitap::dsp::room> room;
+    std::unique_ptr<tap::ambi::dsp::room> room;
     int                                 nch;
     long                                block_size{0};
     float                               gain{1.0f};
@@ -44,7 +44,7 @@ struct room_impl {
     static constexpr float k_gain_slew = 1.0f / 256.0f;
 
     explicit room_impl(int order)
-        : room(std::make_unique<ambitap::dsp::room>(order))
+        : room(std::make_unique<tap::ambi::dsp::room>(order))
         , nch(static_cast<int>(room->channels()))
         , out_ptrs(static_cast<size_t>(nch), nullptr) {}
 };
@@ -180,7 +180,7 @@ static void room_gain(t_ambitap_room_tilde* x, t_floatarg f) {
 // CPU, approximate mid-band RT60, slightly different late texture; the tail
 // stays level-calibrated).
 static void room_absorption(t_ambitap_room_tilde* x, t_symbol* s) {
-    using kind = ambitap::dsp::room::absorption_kind;
+    using kind = tap::ambi::dsp::room::absorption_kind;
     x->p->room->set_absorption_kind(s == gensym("iir") ? kind::iir : kind::fir);
 }
 
@@ -191,8 +191,8 @@ static void room_rt60band(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* 
     }
     const double hz  = atom_getfloat(argv);
     const float  sec = static_cast<float>(atom_getfloat(argv + 1));
-    for (size_t b = 0; b < ambitap::dsp::room::k_rt60_bands; ++b) {
-        if (std::abs(ambitap::dsp::room::k_rt60_centers_hz[b] - hz) < 1.0) {
+    for (size_t b = 0; b < tap::ambi::dsp::room::k_rt60_bands; ++b) {
+        if (std::abs(tap::ambi::dsp::room::k_rt60_centers_hz[b] - hz) < 1.0) {
             x->p->room->set_rt60_band(b, sec);
             return;
         }
@@ -202,10 +202,10 @@ static void room_rt60band(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* 
 
 // reflections <x0 x1 y0 y1 z0 z1>: six wall amplitude coefficients (0..1).
 static void room_reflections(t_ambitap_room_tilde* x, t_symbol*, int argc, t_atom* argv) {
-    if (argc < static_cast<int>(ambitap::dsp::room::k_walls)) {
+    if (argc < static_cast<int>(tap::ambi::dsp::room::k_walls)) {
         return;
     }
-    std::array<float, ambitap::dsp::room::k_walls> c{};
+    std::array<float, tap::ambi::dsp::room::k_walls> c{};
     for (size_t w = 0; w < c.size(); ++w) {
         c[w] = static_cast<float>(atom_getfloat(argv + w));
     }
@@ -215,7 +215,7 @@ static void room_reflections(t_ambitap_room_tilde* x, t_symbol*, int argc, t_ato
 static void* room_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_room_tilde*>(pd_new(ambitap_room_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 0, ambitap::dsp::room::k_max_room_order);
+    ord       = std::clamp(ord, 0, tap::ambi::dsp::room::k_max_room_order);
     x->p      = new room_impl(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);

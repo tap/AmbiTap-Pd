@@ -24,13 +24,13 @@ struct bed2hoa_impl {
     std::vector<std::vector<double>> gains; // [speaker][hoa channel]
     std::vector<float>               zero;
 
-    bed2hoa_impl(int order, const std::vector<ambitap::spherical_coord>& speakers)
-        : hoa_ch(static_cast<int>(ambitap::channel_count(order)))
+    bed2hoa_impl(int order, const std::vector<tap::ambi::spherical_coord>& speakers)
+        : hoa_ch(static_cast<int>(tap::ambi::channel_count(order)))
         , spk(static_cast<int>(speakers.size())) {
         gains.assign(static_cast<size_t>(spk), std::vector<double>(static_cast<size_t>(hoa_ch), 0.0));
-        float sh[ambitap::k_max_channel_count];
+        float sh[tap::ambi::k_max_channel_count];
         for (size_t s = 0; s < static_cast<size_t>(spk); ++s) {
-            ambitap::evaluate_sh(order, speakers[s].azimuth, speakers[s].elevation, sh);
+            tap::ambi::evaluate_sh(order, speakers[s].azimuth, speakers[s].elevation, sh);
             for (size_t ch = 0; ch < static_cast<size_t>(hoa_ch); ++ch) {
                 gains[s][ch] = static_cast<double>(sh[ch]);
             }
@@ -44,8 +44,8 @@ struct t_ambitap_bed2hoa_tilde {
     bed2hoa_impl* p;
 };
 
-static std::vector<ambitap::spherical_coord> layout_from_name(const char* name) {
-    using namespace ambitap::layouts;
+static std::vector<tap::ambi::spherical_coord> layout_from_name(const char* name) {
+    using namespace tap::ambi::layouts;
     if (!std::strcmp(name, "stereo")) {
         return stereo();
     }
@@ -114,11 +114,11 @@ static void bed2hoa_gain(t_ambitap_bed2hoa_tilde* x, t_floatarg f) {
 static void* bed2hoa_new(t_symbol*, int argc, t_atom* argv) {
     auto* x              = reinterpret_cast<t_ambitap_bed2hoa_tilde*>(pd_new(ambitap_bed2hoa_tilde_class));
     int   ord            = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord                  = std::clamp(ord, 0, ambitap::k_max_order);
+    ord                  = std::clamp(ord, 0, tap::ambi::k_max_order);
     const char* layout   = (argc >= 2) ? atom_getsymbol(argv + 1)->s_name : "surround_5_1";
     auto        speakers = layout_from_name(layout);
     if (speakers.empty()) {
-        speakers = ambitap::layouts::surround_5_1();
+        speakers = tap::ambi::layouts::surround_5_1();
     }
     x->p   = new bed2hoa_impl(ord, speakers);
     x->x_f = 0;
