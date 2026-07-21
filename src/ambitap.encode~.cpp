@@ -16,10 +16,10 @@
 static t_class* ambitap_encode_tilde_class;
 
 struct t_ambitap_encode_tilde {
-    t_object               x_obj;
-    t_float                x_f; // main-signal-inlet float fallback (CLASS_MAINSIGNALIN)
+    t_object                 x_obj;
+    t_float                  x_f; // main-signal-inlet float fallback (CLASS_MAINSIGNALIN)
     tap::ambi::dsp::encoder* x_enc;
-    int                    x_channels; // (order+1)^2
+    int                      x_channels; // (order+1)^2
 };
 
 // args: x, in (channel 0), out (nchans * n, channel-major), n

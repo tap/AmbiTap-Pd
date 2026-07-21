@@ -11,8 +11,8 @@ static t_class* ambitap_energyvec_tilde_class;
 
 struct energyvec_impl {
     tap::ambi::analysis::energy_vector ev;
-    std::vector<const float*>        in4;
-    std::vector<float>               zero;
+    std::vector<const float*>          in4;
+    std::vector<float>                 zero;
 
     energyvec_impl()
         : in4(4) {}

@@ -13,7 +13,7 @@
 static t_class* ambitap_decode_tilde_class;
 
 struct decode_impl {
-    tap::ambi::dsp::decoder     dec;
+    tap::ambi::dsp::decoder   dec;
     int                       in_ch;
     int                       spk;
     std::vector<const float*> in_ptrs;

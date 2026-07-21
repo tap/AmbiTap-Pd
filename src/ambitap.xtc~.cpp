@@ -62,10 +62,10 @@ struct xtc_impl {
         }
     };
 
-    std::mutex        control_mutex;
+    std::mutex          control_mutex;
     tap::ambi::dsp::xtc design;
-    long              block_size{0};
-    double            sample_rate{0.0};
+    long                block_size{0};
+    double              sample_rate{0.0};
 
     std::atomic<convolver_quad*> pending{nullptr};
     std::atomic<convolver_quad*> trash{nullptr};

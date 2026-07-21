@@ -23,8 +23,8 @@ static t_class* ambitap_distance_tilde_class;
 struct distance_impl {
     tap::ambi::dsp::doppler dop;
     tap::ambi::dsp::nfc     nfc;
-    int                   nch;
-    float                 fs{48000.0f};
+    int                     nch;
+    float                   fs{48000.0f};
 
     // Control-thread parameters (smoothed on the audio thread).
     float distance{1.0f};
