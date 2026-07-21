@@ -8,7 +8,7 @@
 #include "ambitap/dsp/format_converter.h"
 #include "ambitap_pd.h"
 
-using io_t = ambitap_pd::mc_io<ambitap::dsp::format_converter>;
+using io_t = ambitap_pd::mc_io<tap::ambi::dsp::format_converter>;
 
 static t_class* ambitap_format_tilde_class;
 
@@ -33,7 +33,7 @@ static void format_dsp(t_ambitap_format_tilde* x, t_signal** sp) {
 }
 
 static void format_direction(t_ambitap_format_tilde* x, t_symbol* s) {
-    using dir = ambitap::dsp::format_direction;
+    using dir = tap::ambi::dsp::format_direction;
     x->io->proc.set_direction(std::strcmp(s->s_name, "fuma_to_ambix") == 0 ? dir::fuma_to_ambix : dir::ambix_to_fuma);
 }
 

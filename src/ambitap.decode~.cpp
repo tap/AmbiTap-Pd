@@ -13,14 +13,14 @@
 static t_class* ambitap_decode_tilde_class;
 
 struct decode_impl {
-    ambitap::dsp::decoder     dec;
+    tap::ambi::dsp::decoder     dec;
     int                       in_ch;
     int                       spk;
     std::vector<const float*> in_ptrs;
     std::vector<float*>       out_ptrs;
     std::vector<float>        zero;
 
-    decode_impl(int order, std::vector<ambitap::spherical_coord> speakers)
+    decode_impl(int order, std::vector<tap::ambi::spherical_coord> speakers)
         : dec(order)
         , in_ch(static_cast<int>(dec.input_channels()))
         , spk(static_cast<int>(speakers.size()))
@@ -36,8 +36,8 @@ struct t_ambitap_decode_tilde {
     decode_impl* p;
 };
 
-static std::vector<ambitap::spherical_coord> layout_from_name(const char* name) {
-    using namespace ambitap::layouts;
+static std::vector<tap::ambi::spherical_coord> layout_from_name(const char* name) {
+    using namespace tap::ambi::layouts;
     if (!std::strcmp(name, "stereo")) {
         return stereo();
     }
@@ -92,7 +92,7 @@ static void decode_dsp(t_ambitap_decode_tilde* x, t_signal** sp) {
 }
 
 static void decode_decoder_type(t_ambitap_decode_tilde* x, t_symbol* s) {
-    using alg = ambitap::dsp::decoder_algorithm;
+    using alg = tap::ambi::dsp::decoder_algorithm;
     if (!std::strcmp(s->s_name, "allrad")) {
         x->p->dec.set_algorithm(alg::allrad);
     }
@@ -110,11 +110,11 @@ static void decode_max_re(t_ambitap_decode_tilde* x, t_floatarg f) {
 static void* decode_new(t_symbol*, int argc, t_atom* argv) {
     auto* x              = reinterpret_cast<t_ambitap_decode_tilde*>(pd_new(ambitap_decode_tilde_class));
     int   ord            = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord                  = std::clamp(ord, 1, ambitap::k_max_order);
+    ord                  = std::clamp(ord, 1, tap::ambi::k_max_order);
     const char* layout   = (argc >= 2) ? atom_getsymbol(argv + 1)->s_name : "stereo";
     auto        speakers = layout_from_name(layout);
     if (speakers.empty()) {
-        speakers = ambitap::layouts::stereo();
+        speakers = tap::ambi::layouts::stereo();
     }
     x->p   = new decode_impl(ord, std::move(speakers));
     x->x_f = 0;

@@ -6,7 +6,7 @@
 #include "ambitap/dsp/mirror.h"
 #include "ambitap_pd.h"
 
-using io_t = ambitap_pd::mc_io<ambitap::dsp::mirror>;
+using io_t = ambitap_pd::mc_io<tap::ambi::dsp::mirror>;
 
 static t_class* ambitap_mirror_tilde_class;
 
@@ -43,7 +43,7 @@ static void mirror_flip_ud(t_ambitap_mirror_tilde* x, t_floatarg f) {
 static void* mirror_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_mirror_tilde*>(pd_new(ambitap_mirror_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 0, ambitap::k_max_order);
+    ord       = std::clamp(ord, 0, tap::ambi::k_max_order);
     x->io     = new io_t(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);

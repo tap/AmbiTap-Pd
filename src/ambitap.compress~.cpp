@@ -8,7 +8,7 @@
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap_pd.h"
 
-using io_t = ambitap_pd::mc_io<ambitap::dsp::spatial_compressor>;
+using io_t = ambitap_pd::mc_io<tap::ambi::dsp::spatial_compressor>;
 
 static t_class* ambitap_compress_tilde_class;
 
@@ -52,7 +52,7 @@ static void compress_makeup(t_ambitap_compress_tilde* x, t_floatarg f) {
 static void* compress_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_compress_tilde*>(pd_new(ambitap_compress_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 1, ambitap::k_max_order);
+    ord       = std::clamp(ord, 1, tap::ambi::k_max_order);
     x->io     = new io_t(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);

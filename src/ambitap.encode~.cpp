@@ -4,7 +4,7 @@
 ///
 /// Order is a creation argument (default 1). The output is a single
 /// multichannel signal of (order+1)^2 channels (Pd >= 0.54). DSP lives in
-/// ambitap::dsp::encoder; this file is Pd C-API glue.
+/// tap::ambi::dsp::encoder; this file is Pd C-API glue.
 // SPDX-License-Identifier: MIT
 // Copyright 2025-2026 Timothy Place.
 
@@ -18,7 +18,7 @@ static t_class* ambitap_encode_tilde_class;
 struct t_ambitap_encode_tilde {
     t_object               x_obj;
     t_float                x_f; // main-signal-inlet float fallback (CLASS_MAINSIGNALIN)
-    ambitap::dsp::encoder* x_enc;
+    tap::ambi::dsp::encoder* x_enc;
     int                    x_channels; // (order+1)^2
 };
 
@@ -63,8 +63,8 @@ static void* ambitap_encode_tilde_new(t_symbol* s, int argc, t_atom* argv) {
     if (argc >= 1) {
         order = static_cast<int>(atom_getfloat(argv));
     }
-    order         = std::clamp(order, 0, ambitap::k_max_order);
-    x->x_enc      = new ambitap::dsp::encoder(order);
+    order         = std::clamp(order, 0, tap::ambi::k_max_order);
+    x->x_enc      = new tap::ambi::dsp::encoder(order);
     x->x_channels = static_cast<int>(x->x_enc->channels());
     x->x_f        = 0;
     outlet_new(&x->x_obj, &s_signal); // one (multichannel) signal outlet

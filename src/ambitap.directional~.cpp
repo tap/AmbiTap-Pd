@@ -6,7 +6,7 @@
 #include "ambitap/dsp/directional_loudness.h"
 #include "ambitap_pd.h"
 
-using io_t = ambitap_pd::mc_io<ambitap::dsp::directional_loudness>;
+using io_t = ambitap_pd::mc_io<tap::ambi::dsp::directional_loudness>;
 
 static t_class* ambitap_directional_tilde_class;
 
@@ -43,7 +43,7 @@ static void directional_gain(t_ambitap_directional_tilde* x, t_floatarg f) {
 static void* directional_new(t_symbol*, int argc, t_atom* argv) {
     auto* x   = reinterpret_cast<t_ambitap_directional_tilde*>(pd_new(ambitap_directional_tilde_class));
     int   ord = (argc >= 1) ? static_cast<int>(atom_getfloat(argv)) : 1;
-    ord       = std::clamp(ord, 1, ambitap::k_max_order);
+    ord       = std::clamp(ord, 1, tap::ambi::k_max_order);
     x->io     = new io_t(ord);
     x->x_f    = 0;
     outlet_new(&x->x_obj, &s_signal);
