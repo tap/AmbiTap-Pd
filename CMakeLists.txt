@@ -14,12 +14,32 @@
 # Configure/build (single-config generators):
 #   cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 #   cmake --build build --parallel
-# macOS universal:
-#   cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+# macOS builds universal (arm64 + x86_64) by default; override with
+#   cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64"
 
 cmake_minimum_required(VERSION 3.24)
 
 project(AmbiTap-Pd LANGUAGES C CXX)
+
+# ------------------------------------------------------------------------------
+# macOS: build a universal external by default.
+#
+# Without this the arch came from whatever the host happened to be, so a local
+# build produced a single-arch .pd_darwin that will not load in a Pd of the other
+# architecture — while CI, which passes -DCMAKE_OSX_ARCHITECTURES explicitly,
+# produced a universal one. Set before any target is created, since CMake reads
+# this to initialize the target's OSX_ARCHITECTURES property. An explicit value
+# still wins, so CI is unaffected.
+#
+# No deployment target is pinned here on purpose: the family's macOS 11.0 floor
+# tracks Max 9's system requirement, which does not apply to a Pd external, and
+# nothing in this tree needs it (no std::filesystem). Pd's own baseline is the
+# maintainer's call.
+# ------------------------------------------------------------------------------
+if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "macOS architectures" FORCE)
+    message(STATUS "CMAKE_OSX_ARCHITECTURES set to ${CMAKE_OSX_ARCHITECTURES}")
+endif()
 
 # ------------------------------------------------------------------------------
 # AmbiTap core (headers + Eigen + Ooura FFT + C++20, via AmbiTap::ambitap).
